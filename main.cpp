@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <termios.h>
+#include <unistd.h>
 
 #include "game.hpp"
 
@@ -27,65 +29,79 @@ void operator delete(void* memory, size_t size) {
     free(memory);
 } 
 
-void move_in_circle(game& g) {
-    for (int i = 0; i < g.get_col_limit(); i++) {
-        g.render();
-        g.move_snek(right);
-        g.render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+char getch(bool& keyPressed) {
+    char buf = 0;
+    struct termios old = {0};
+    struct termios new_term = {0};
+    fflush(stdout);
+    if (tcgetattr(0, &old) < 0)
+        perror("tcsetattr()");
+    new_term = old;
+    new_term.c_lflag &= ~ICANON;
+    new_term.c_lflag &= ~ECHO;
+    new_term.c_cc[VMIN] = 0;
+    new_term.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, &new_term) < 0)
+        perror("tcsetattr ICANON");
+    ssize_t bytesRead = read(0, &buf, 1);
+    if (bytesRead < 0) {
+        perror ("read()");
+        keyPressed = false;
+    } else if (bytesRead == 0) {
+        // No key pressed
+        keyPressed = false;
+    } else {
+        keyPressed = true;
     }
+    old.c_lflag |= ICANON;
+    old.c_lflag |= ECHO;
+    if (tcsetattr(0, TCSADRAIN, &old) < 0)
+        perror ("tcsetattr ~ICANON");
+    return buf;
+}
 
-    for (int i = 0; i < g.get_row_limit(); i++) {
-        g.render();
-        g.move_snek(down);
-        g.render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    for (int i = 0; i < g.get_col_limit(); i++) {
-        g.render();
-        g.move_snek(left);
-        g.render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    for (int i = 0; i < g.get_row_limit(); i++) {
-        g.render();
-        g.move_snek(up);
-        g.render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
+int chose_difficulty() {
+    system("clear");
+    std::cout << "Difficulty ? (1: Easy, 2: Medium, 3: Hard)" << std::endl;
+    int tmp_difficulty = 2;
+    std::cin >> tmp_difficulty;
+    if (tmp_difficulty == 1) return 1;
+    if (tmp_difficulty == 3) return 3;
+    else return 2;
 }
 
 int main() {
     {
+        int difficulty = chose_difficulty();
         game* g =  new game();
-        char move;
         g->render();
-        std::cin >> move;
-        switch (move)
-        {
-        case 'z':
-            g->move_snek(up);
-            break;
-        case 's':
-            g->move_snek(down);
-            break;
-        case 'd':
-            g->move_snek(right);
-            break;
-        case 'q':
-            g->move_snek(left);
-            break;
-        default:
-            break;
+        char key;
+        bool keyPressed = false;
+        while (!g->is_snek_dead()) {
+            key = getch(keyPressed);
+            if (keyPressed) {
+                switch (key) {
+                    case 'z':
+                        g->move_snek(up);
+                        break;
+                    case 'q':
+                        g->move_snek(left);
+                        break;
+                    case 's':
+                        g->move_snek(down);
+                        break;
+                    case 'd':
+                        g->move_snek(right);
+                        break;
+                }
+            } else {
+                g->move_snek(g->get_last_snek_move());
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100 * (10 / difficulty)));
+            g->render();
         }
-        g->move_snek(left);
-        g->render();
         delete g;
-        print_memory_usage();
     }
-    print_memory_usage();
 
     return 0;
 }

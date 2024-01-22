@@ -15,7 +15,7 @@ struct snek_part {
 };
 
 class snek {
-    uint8_t health;
+    int health;
     uint8_t length;
     std::vector<std::shared_ptr<snek_part>> body;
 

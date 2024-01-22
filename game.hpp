@@ -28,16 +28,23 @@ class game {
     uint16_t round;
     uint8_t row_limit = 5;
     uint8_t col_limit = 8;
-    
+    uint8_t difficulty = 0; 
+    snek_directions last_move;
     std::unique_ptr<snek> snake;
     std::unique_ptr<food> foodie;
 
     public:
 
-        game() : score(0), round(0), snake(std::make_unique<snek>(3)), foodie(std::make_unique<food>(row_limit, col_limit)) {}
+        game() : score(0), round(0), snake(std::make_unique<snek>(3)), foodie(std::make_unique<food>(row_limit, col_limit)), last_move(right) {}
 
         uint8_t const get_row_limit() { return row_limit; }
         uint8_t const get_col_limit() { return col_limit; }
+
+        snek_directions get_last_snek_move() { return last_move; }
+
+        bool is_snek_dead() {
+            return snake->is_dead();
+        }
 
         bool is_snek_eating_itself(int const& row, int const& col) {
             return is_snek_body(row, col, false);
@@ -62,6 +69,7 @@ class game {
                         snake->hurt();
                         break;
                     }
+                    last_move = right;
                     snake->horizontal_move(1);
                     break;
                 case left:
@@ -70,6 +78,7 @@ class game {
                         snake->hurt();
                         break;
                     }
+                    last_move = left;
                     snake->horizontal_move(-1);
                     break;
                 case down:
@@ -78,6 +87,7 @@ class game {
                         snake->hurt();
                         break;
                     }
+                    last_move = down;
                     snake->vertical_move(1);
                     break;
                 case up:
@@ -86,6 +96,7 @@ class game {
                         snake->hurt();
                         break;
                     }
+                    last_move = up;
                     snake->vertical_move(-1);
                     break;
             }
@@ -144,11 +155,19 @@ class game {
             }
         }
 
+        void display_game_over() {
+            system("clear");
+            std::cout << "GAME OVER." << std::endl;
+            std::cout << "Score : " << std::to_string(score) << " Points." << std::endl;
+        }
+
         void render() {
             system("clear");
+            if (is_snek_dead()) {
+                display_game_over();
+                return;
+            }
             display_score_and_health();
             display_board();
         }
-
-
 };
