@@ -1,4 +1,5 @@
 #include <vector>
+#include <list>
 struct snek_part {
     int row;
     int col;
@@ -17,52 +18,42 @@ struct snek_part {
 class snek {
     int health;
     uint8_t length;
-    std::vector<std::shared_ptr<snek_part>> body;
+    std::list<std::shared_ptr<snek_part>> body;
 
     public:
 
         snek(int const& length) : health(5) {
             this->length = length;
             for (int i = length - 1; i >= 0; i--) {
-                body.emplace_back(new snek_part(0, i));
+                body.emplace_back(std::make_shared<snek_part>(0, i));
             }
         }
 
         uint8_t const get_health() { return health; }
         void hurt() { health -= 1; }
         void set_health(int const& health) { this->health = health; }
-        std::vector<std::shared_ptr<snek_part>> const get_body() { return body; }
-        std::shared_ptr<snek_part> const get_head_coord() { return body[0]; }
+        std::list<std::shared_ptr<snek_part>> const get_body() { return body; }
+        std::shared_ptr<snek_part> const get_head() { return body.front(); }
         uint8_t const get_length() { return length; }
 
         void grow() {
-            std::shared_ptr<snek_part> tail = body[length - 1];
-            body.emplace_back(new snek_part(tail->row, tail->col + 1));
-            this->length += 1;
+            std::shared_ptr<snek_part> tail = body.back();
+            body.emplace_back(std::make_shared<snek_part>(tail->row, tail->col + 1));
+            length += 1;
         }
 
         void horizontal_move(int const& direction) {
-            std::shared_ptr<snek_part> head = body[0];
-            snek_part prev = *head;
-            head->col += direction;
-            for (int i = 1; i < this->length; i++) {
-                auto tmp = *body[i];
-                body[i]->col = prev.col;
-                body[i]->row = prev.row;
-                prev = tmp;
-            }
+            std::shared_ptr<snek_part> head = get_head();
+            std::shared_ptr<snek_part> new_head = std::make_shared<snek_part>(head->row, head->col + direction);
+            body.push_front(new_head);
+            body.pop_back();
         }
 
         void vertical_move(int const& direction) {
-            std::shared_ptr<snek_part> head = body[0];
-            snek_part prev = *head;
-            head->row += direction;
-            for (int i = 1; i < this->length; i++) {
-                auto tmp = *body[i];
-                body[i]->col = prev.col;
-                body[i]->row = prev.row;
-                prev = tmp;
-            }
+            std::shared_ptr<snek_part> head = get_head();
+            std::shared_ptr<snek_part> new_head = std::make_shared<snek_part>(head->row + direction, head->col);
+            body.push_front(new_head);
+            body.pop_back();
         }
         bool const is_dead() { return health <= 0; }
 };

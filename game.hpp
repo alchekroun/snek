@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <list>
 
 #include "snek.hpp"
 
@@ -52,7 +53,7 @@ class game {
         }
 
         bool is_snek_eating_food() {
-            std::shared_ptr<snek_part> snek_coord = snake->get_head_coord();
+            std::shared_ptr<snek_part> snek_coord = snake->get_head();
             return snek_coord->row == foodie->row && snek_coord->col == foodie->col;
         }
 
@@ -61,7 +62,7 @@ class game {
         }
 
         void move_snek(snek_directions direction) {
-            std::shared_ptr<snek_part> snek_coord = snake->get_head_coord();
+            std::shared_ptr<snek_part> snek_coord = snake->get_head();
             switch (direction) {
                 case right:
                     if (!is_inbound(snek_coord->row, snek_coord->col + 1)) break;
@@ -114,16 +115,17 @@ class game {
         }
 
         bool is_snek_head(int const& row, int const& col) {
-            std::shared_ptr<snek_part> snek_head = snake->get_head_coord();
+            std::shared_ptr<snek_part> snek_head = snake->get_head();
             return snek_head->row == row && snek_head->col == col;
         }
 
         bool is_snek_body(int const& row, int const& col, bool const& include_head = true) {
-            std::vector<std::shared_ptr<snek_part>> snek_body_coord = snake->get_body();
-            for (int i = (include_head ? 0 : 1); i < snake->get_length(); i++) {
-                if (snek_body_coord[i]->row == row && snek_body_coord[i]->col == col) return true;
-            }
-            return false;
+            std::list<std::shared_ptr<snek_part>> snek_body_coord = snake->get_body();
+            auto startIterator = include_head ? snek_body_coord.begin() : std::next(snek_body_coord.begin());
+            return std::find_if(startIterator, snek_body_coord.end(), 
+            [&](std::shared_ptr<snek_part> const& snek_body_part){
+                return snek_body_part->row == row && snek_body_part->col == col;
+            }) != snek_body_coord.end();
         }
 
         void display_score_and_health() {
@@ -142,11 +144,11 @@ class game {
                         continue;
                     }
                     if (is_snek_head(row, col)) {
-                        std::cout << '>';
+                        std::cout << '@';
                     } else if (is_snek_body(row, col)) {
-                        std::cout << '#';
+                        std::cout << 'o';
                     } else if (row == foodie->row && col == foodie->col) {
-                        std::cout << "X";
+                        std::cout << "#";
                     } else {
                         std::cout << ' ';
                     }
