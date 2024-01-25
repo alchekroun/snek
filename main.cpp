@@ -9,14 +9,16 @@
 struct allocation_metrics {
     uint32_t total_allocated = 0;
     uint32_t total_freed = 0;
-
     uint32_t current_usage() { return total_allocated - total_freed; }
+
 };
 
 static allocation_metrics a_metrics;
 
 static void print_memory_usage() {
-    std::cout << "Memory usage : " << a_metrics.current_usage() << " bytes" << std::endl;
+    std::cout << "Memory Usage :\t\t" << a_metrics.current_usage() / 1000 << "\tMbytes" << std::endl;
+    std::cout << "Memory Allocated :\t" << a_metrics.total_allocated  / 1000<< "\tMbytes" << std::endl;
+    std::cout << "Memory Freed :\t\t" << a_metrics.total_freed / 1000 << "\tMbytes" << std::endl;
 }
 
 void* operator new(size_t size) {
@@ -24,8 +26,8 @@ void* operator new(size_t size) {
     return malloc(size);
 }
 
-void operator delete(void* memory, size_t size) {
-    a_metrics.total_freed += size;
+void operator delete(void* memory) {
+    a_metrics.total_freed += sizeof(memory);
     free(memory);
 } 
 
@@ -99,8 +101,10 @@ int main() {
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(100 * (10 / difficulty)));
             g->render();
+            print_memory_usage();
         }
         delete g;
+        print_memory_usage();
     }
 
     return 0;
